@@ -19,7 +19,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           mkdir bundle
           cp agent/run_agent.py agent/requirements.txt agent/README.md agent/noc-agent.service agent/install_windows.ps1 agent/start_agent.ps1 bundle/
-          (cd bundle && zip -q "../noc-monitor-agent-${version}.zip" .)
+          (cd bundle && zip -q -r "../noc-monitor-agent-${version}.zip" .)
       - name: Publish GitHub release and agent bundle
         env:
           GH_TOKEN: ${{ github.token }}
