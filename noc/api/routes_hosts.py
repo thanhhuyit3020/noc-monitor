@@ -54,6 +54,8 @@ async def list_hosts(request: Request):
 
 @router.post("", status_code=201)
 async def create_host(body: HostInput, request: Request):
+    if body.host_type == "local":
+        raise HTTPException(422, "Local monitoring is reserved for the NOC Server host")
     if body.host_type == "agent" and await _token_in_use(request.app.state.db, body.config["agent_token"]):
         raise HTTPException(409, "Agent token is already assigned to another host")
     now = time.time()
@@ -73,6 +75,8 @@ async def update_host(host_id: str, body: HostInput, request: Request):
     if not rows:
         raise HTTPException(404, "Host not found")
     old = rows[0]
+    if (host_id == "local") != (body.host_type == "local"):
+        raise HTTPException(422, "Local monitoring is reserved for the NOC Server host")
     config = _merge_secrets(body.config, json.loads(old["config_json"]))
     if body.host_type == "agent" and await _token_in_use(request.app.state.db, config["agent_token"], host_id):
         raise HTTPException(409, "Agent token is already assigned to another host")

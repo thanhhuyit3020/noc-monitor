@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>NOC Monitor</title>
+  <link rel="stylesheet" href="/static/js/vendor/uPlot.min.css">
+  <link rel="stylesheet" href="/static/css/noc.css?v=6">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#"><span class="brand-mark">N</span><span><strong>NOC</strong><small>CONTROL ROOM</small></span></a>
+      <nav class="primary-nav" aria-label="Main navigation" data-i18n-aria-label="navigation">
+        <button class="nav-item active" data-page="wallboard" title="Wallboard" data-i18n-title="wallboard"><span>▦</span> <span data-i18n="wallboard">Wallboard</span></button>
+        <button class="nav-item" data-page="incidents" title="Incidents" data-i18n-title="incidents"><span>◉</span> <span data-i18n="incidents">Incidents</span> <b id="incident-count">0</b></button>
+        <button class="nav-item" data-page="settings" title="Configuration" data-i18n-title="configuration"><span>⚙</span> <span data-i18n="configuration">Configuration</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-label" data-i18n="system">SYSTEM</div>
+        <div class="health-row"><i id="ws-indicator" class="status-dot"></i><span id="connection-state" data-i18n="connecting">Connecting</span></div>
+        <div class="muted small" data-i18n="localPolling">Local polling · SQLite WAL</div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+          <div><div class="eyebrow" data-i18n="networkOperations">NETWORK OPERATIONS</div><h1 id="page-title">Wallboard</h1></div>
+        <div class="top-actions">
+          <span class="clock" id="clock"></span>
+          <button class="button secondary account-button" id="account-button" type="button"></button>
+          <div class="language-switcher" role="group" aria-label="Language" data-i18n-aria-label="language">
+            <button class="button secondary language-button" id="lang-vi" type="button" aria-pressed="true">VI</button>
+            <button class="button secondary language-button" id="lang-en" type="button" aria-pressed="false">EN</button>
+          </div>
+          <button class="button secondary" id="logout-button" type="button" data-i18n="signOut">Sign out</button>
+          <button class="button secondary" id="audio-toggle" type="button" data-i18n="audioEnable">◖ Bật âm thanh cảnh báo</button>
+          <button class="icon-button" id="fullscreen" title="Fullscreen kiosk" data-i18n-title="fullscreenKiosk" aria-label="Fullscreen" data-i18n-aria-label="fullscreen">⛶</button>
+        </div>
+      </header>
+      <section id="wallboard-page" class="page active">
+        <div class="telemetry" id="summary"></div>
+        <div class="section-heading">
+          <div><h2 data-i18n="monitoredHosts">Monitored hosts</h2><p data-i18n="liveTelemetry">Live telemetry from local, agent, SNMP and active probes</p></div>
+          <div class="toolbar"><input id="host-filter" class="search" data-i18n-placeholder="filterHosts" placeholder="Filter hosts…" autocomplete="off"><button class="button primary" id="add-host" data-i18n="addHost">＋ Add host</button></div>
+        </div>
+        <div id="host-grid" class="host-grid"></div>
+      </section>
+      <section id="incidents-page" class="page">
+        <div class="section-heading"><div><h2 data-i18n="incidentConsole">Incident console</h2><p data-i18n="incidentSubtitle">Open, acknowledge and resolve monitored events</p></div><select id="incident-filter" class="select"><option value="" data-i18n="allStates">All states</option><option>OPEN</option><option>ACKNOWLEDGED</option><option>RESOLVED</option></select></div>
+        <div class="table-wrap"><table><thead><tr><th data-i18n="severity">Severity</th><th data-i18n="incident">Incident</th><th data-i18n="host">Host</th><th data-i18n="resource">Resource</th><th data-i18n="state">State</th><th data-i18n="updated">Updated</th><th></th></tr></thead><tbody id="incidents-table"></tbody></table></div>
+      </section>
+      <section id="settings-page" class="page">
+        <div class="section-heading"><div><h2 data-i18n="configuration">Configuration</h2><p data-i18n="configurationSubtitle">Hosts, alert rules and notification channels</p></div><button class="button primary" id="add-host-settings" data-i18n="addHost">＋ Add host</button></div>
+        <div class="settings-grid">
+          <section class="panel"><div class="panel-heading"><div><h3 data-i18n="hosts">Hosts</h3><p data-i18n="hostsSubtitle">Configure polling and credentials</p></div></div><div id="hosts-table"></div></section>
+          <section class="panel"><div class="panel-heading"><div><h3 data-i18n="alertRules">Alert rules</h3><p data-i18n="alertRulesSubtitle">Thresholds and consecutive polls</p></div><button class="button secondary small-button" id="add-rule" data-i18n="addRule">＋ Rule</button></div><div id="rules-table"></div></section>
+          <section class="panel"><div class="panel-heading"><div><h3 data-i18n="notificationChannels">Notification channels</h3><p data-i18n="channelsSubtitle">Dashboard, Telegram, webhook and SMTP</p></div><button class="button secondary small-button" id="add-channel" data-i18n="addChannel">＋ Channel</button></div><div id="channels-table"></div></section>
+          <section class="panel" id="user-management-panel" hidden><div class="panel-heading"><div><h3 data-i18n="userAccess">User access</h3><p data-i18n="userAccessSubtitle">Manage dashboard accounts and access levels</p></div><button class="button secondary small-button" id="add-user" data-i18n="addUser">＋ User</button></div><div id="users-table"></div></section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="host-dialog" class="modal"><form id="host-form" method="dialog"></form></dialog>
+  <dialog id="rule-dialog" class="modal"><form id="rule-form" method="dialog"></form></dialog>
+  <dialog id="channel-dialog" class="modal"><form id="channel-form" method="dialog"></form></dialog>
+  <dialog id="user-dialog" class="modal"><form id="user-form" method="dialog"></form></dialog>
+  <dialog id="password-dialog" class="modal"><form id="password-form" method="dialog"></form></dialog>
+  <aside id="host-drawer" class="drawer" aria-hidden="true"></aside>
+  <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+  <script src="/static/js/vendor/uPlot.min.js"></script>
+  <script src="/static/js/audio.js"></script>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/app.js?v=6"></script>
+</body>
+</html>

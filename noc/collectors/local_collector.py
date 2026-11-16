@@ -100,8 +100,9 @@ class LocalCollector:
                 drop_in = self._rate(f"net:{name}:dropin", counters.dropin, now)
                 drop_out = self._rate(f"net:{name}:dropout", counters.dropout, now)
                 stats = psutil.net_if_stats().get(name)
-                item = {"resource_key": key, "name": name, "rx_bps": rx_bps, "tx_bps": tx_bps, "is_up": bool(stats and stats.isup), "speed_mbps": stats.speed if stats else None, "errin_per_sec": error_in, "errout_per_sec": error_out, "dropin_per_sec": drop_in, "dropout_per_sec": drop_out}
+                item = {"resource_key": key, "name": name, "rx_bps": rx_bps, "tx_bps": tx_bps, "is_up": bool(stats.isup) if stats else None, "speed_mbps": stats.speed if stats else None, "errin_per_sec": error_in, "errout_per_sec": error_out, "dropin_per_sec": drop_in, "dropout_per_sec": drop_out}
                 details["networks"].append(item)
+                add("net.if_up", int(stats.isup) if stats else None, "bool", key)
                 add("net.rx_bps", None if rx_bps is None else rx_bps * 8, "bps", key)
                 add("net.tx_bps", None if tx_bps is None else tx_bps * 8, "bps", key)
                 add("net.error_rate", None if error_in is None or error_out is None else error_in + error_out, "errors/s", key)

@@ -18,6 +18,7 @@ CATALOG = {
     "disk.write_iops": {"unit": "IOPS", "resource_scoped": True, "applies_to": ["local", "agent"]},
     "net.rx_bps": {"unit": "bps", "resource_scoped": True, "applies_to": ["local", "agent", "snmp"]},
     "net.tx_bps": {"unit": "bps", "resource_scoped": True, "applies_to": ["local", "agent", "snmp"]},
+    "net.if_up": {"unit": "bool", "resource_scoped": True, "applies_to": ["local", "agent", "snmp"]},
     "net.error_rate": {"unit": "errors/s", "resource_scoped": True, "applies_to": ["local", "agent", "snmp"]},
     "net.drop_rate": {"unit": "drops/s", "resource_scoped": True, "applies_to": ["local", "agent", "snmp"]},
     "ping.latency_ms": {"unit": "ms", "resource_scoped": False, "applies_to": ["agent", "snmp", "ping_http"]},

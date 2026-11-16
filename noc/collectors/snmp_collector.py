@@ -211,9 +211,10 @@ class SNMPCollector:
         excluded = set(config.get("if_exclude", []))
         for index, name in interface_data["name"].items():
             interface_name = str(name).strip()
-            if interface_name in excluded or interface_data["status"].get(index) == 2:
+            if interface_name in excluded:
                 continue
             key = resource_key("nic", interface_name)
+            status = interface_data["status"].get(index)
             rx = interface_data["in64"].get(index)
             tx = interface_data["out64"].get(index)
             rx_bytes_sec = self._rate(f"{hostname}:{interface_name}:rx", rx, now, counter_bits) if isinstance(rx, int) else None
@@ -222,7 +223,8 @@ class SNMPCollector:
             drop_rates = [self._rate(f"{hostname}:{interface_name}:{field}", interface_data[field][index], now, 32) if isinstance(interface_data[field].get(index), int) else None for field in ("dropin", "dropout")]
             errors = sum(error_rates) if all(rate is not None for rate in error_rates) else None
             drops = sum(drop_rates) if all(rate is not None for rate in drop_rates) else None
-            details["interfaces"].append({"name": interface_name, "status": interface_data["status"].get(index), "speed_mbps": interface_data["speed"].get(index), "rx_bps": rx_bytes_sec, "tx_bps": tx_bytes_sec, "errors_per_sec": errors, "drops_per_sec": drops})
+            details["interfaces"].append({"name": interface_name, "status": status, "speed_mbps": interface_data["speed"].get(index), "rx_bps": rx_bytes_sec, "tx_bps": tx_bytes_sec, "errors_per_sec": errors, "drops_per_sec": drops})
+            add("net.if_up", None if status is None else int(status == 1), "bool", key)
             add("net.rx_bps", None if rx_bytes_sec is None else rx_bytes_sec * 8, "bps", key)
             add("net.tx_bps", None if tx_bytes_sec is None else tx_bytes_sec * 8, "bps", key)
             add("net.error_rate", errors, "errors/s", key)

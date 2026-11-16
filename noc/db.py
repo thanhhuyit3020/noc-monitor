@@ -86,6 +86,17 @@ class Database:
           id INTEGER PRIMARY KEY AUTOINCREMENT, incident_id TEXT, channel_id TEXT, channel_type TEXT NOT NULL,
           sent_at REAL NOT NULL, success INTEGER NOT NULL, error TEXT NOT NULL DEFAULT '', payload TEXT NOT NULL DEFAULT ''
         );
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY, username TEXT NOT NULL COLLATE NOCASE UNIQUE, password_hash TEXT NOT NULL,
+          role TEXT NOT NULL CHECK(role IN ('global_admin','admin','operator','viewer')),
+          is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0,1)), created_at REAL NOT NULL, updated_at REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS sessions (
+          token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          csrf_hash TEXT NOT NULL, created_at REAL NOT NULL, expires_at REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+        CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
         """)
         now = time.time()
         cursor = await self.connection.execute("SELECT count(*) FROM hosts")
@@ -171,7 +182,7 @@ class Database:
                             metrics = snap.get("metrics", [])
                             get_value = lambda key: next((m.get("value") for m in metrics if m.get("key") == key and not m.get("resource_key")), None)
                             await self.connection.execute(
-                                "UPDATE hosts SET status=CASE WHEN status='maintenance' THEN status ELSE ? END,status_reason=?,os_info=COALESCE(NULLIF(?,''),os_info),last_seen_at=CASE WHEN ? IN ('up','maintenance') THEN ? ELSE last_seen_at END,last_boot_time=COALESCE(?,last_boot_time),updated_at=? WHERE id=?",
+                                "UPDATE hosts SET status=CASE WHEN status='maintenance' THEN status ELSE ? END,status_reason=?,os_info=?,last_seen_at=CASE WHEN ? IN ('up','maintenance') THEN ? ELSE last_seen_at END,last_boot_time=COALESCE(?,last_boot_time),updated_at=? WHERE id=?",
                                 (item["status"], item["reason"], item["os_info"], item["status"], snap.get("ts", now), item["boot_time"], now, item["host_id"]),
                             )
                             await self.connection.execute(
