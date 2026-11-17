@@ -21,9 +21,21 @@ if ([string]::IsNullOrWhiteSpace($token)) { throw "Agent token cannot be empty."
 
 $installDir = Join-Path $env:ProgramData "NOC-Agent"
 New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-foreach ($file in @("run_agent.py", "requirements.txt", "start_agent.ps1")) {
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination (Join-Path $installDir $file) -Force
+$agentSource = $PSScriptRoot
+if (-not (Test-Path (Join-Path $agentSource "run_agent.py"))) {
+    $agentSource = (Resolve-Path (Join-Path $PSScriptRoot "..\..\agent")).Path
 }
+$runnerSource = Join-Path $PSScriptRoot "start_agent.ps1"
+if (-not (Test-Path $runnerSource)) {
+    $runnerSource = Join-Path $agentSource "start_agent.ps1"
+}
+foreach ($file in @("run_agent.py", "requirements.txt")) {
+    $source = Join-Path $agentSource $file
+    if (-not (Test-Path $source)) { throw "Agent source file not found: $source" }
+    Copy-Item -LiteralPath $source -Destination (Join-Path $installDir $file) -Force
+}
+if (-not (Test-Path $runnerSource)) { throw "Agent runner not found: $runnerSource" }
+Copy-Item -LiteralPath $runnerSource -Destination (Join-Path $installDir "start_agent.ps1") -Force
 & icacls.exe $installDir /inheritance:r /grant:r "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Could not restrict permissions on $installDir." }
 

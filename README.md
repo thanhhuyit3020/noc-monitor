@@ -1,6 +1,6 @@
-# NOC Monitor V1.0.1
+# NOC Monitor V1.0.2
 
-> **Mô tả GitHub:** NOC Monitor V1.0.1: Nền tảng NOC giám sát máy chủ và thiết bị mạng qua Agent, SNMP, ICMP, TCP, HTTP; dashboard thời gian thực và cảnh báo đa kênh trên Windows Server.
+> **Mô tả GitHub:** NOC Monitor V1.0.2: Nền tảng NOC giám sát máy chủ và thiết bị mạng qua Agent, SNMP, ICMP, TCP, HTTP; dashboard thời gian thực và cảnh báo đa kênh trên Windows Server hoặc Ubuntu.
 
 NOC Monitor là phần mềm giám sát tập trung gọn nhẹ theo mô hình Zabbix/PRTG. Máy chủ NOC thu thập số liệu, lưu lịch sử trong SQLite và hiển thị trạng thái hệ thống trên dashboard web. Có thể giám sát máy chủ Windows/Linux và thiết bị mạng mà không cần cài agent, hoặc cài agent nhẹ để lấy thêm chỉ số chuyên sâu.
 
@@ -9,7 +9,7 @@ NOC Monitor là phần mềm giám sát tập trung gọn nhẹ theo mô hình Z
 - **Dashboard thời gian thực:** Wallboard, trạng thái host, lịch sử biểu đồ, chi tiết tài nguyên và giao diện tối ưu cho màn hình NOC.
 - **Giám sát máy NOC:** CPU tổng/theo core, RAM, swap, dung lượng ổ đĩa, disk I/O và IOPS, trạng thái up/down và lưu lượng từng card mạng, TCP connections, tiến trình, Windows Services, Windows Event Log, uptime và reboot.
 - **SNMP agentless:** SNMP v1/v2c bằng client BER Python tích hợp; SNMPv3 qua PySNMP. Hỗ trợ IF-MIB/HOST-RESOURCES-MIB và profile cho Windows, Linux, Cisco, MikroTik, Fortinet, Huawei, HPE Aruba.
-- **Agent từ xa:** gói cài Windows/Linux tách riêng trong `agent/`; hỗ trợ Push và Pull, thu thập chỉ số hệ điều hành bằng token.
+- **Agent từ xa:** mã runtime trong `agent/`, bộ cài Windows trong `WindowSetup/Agent/` và bộ cài Linux trong `LinuxSetup/Agent/`; hỗ trợ Push và Pull, thu thập chỉ số hệ điều hành bằng token.
 - **Active probes:** ICMP ping (latency, jitter, packet loss), TCP port, HTTP/HTTPS status và nội dung phản hồi, hạn chứng chỉ TLS.
 - **Cảnh báo và sự cố:** Ngưỡng Warning/Critical, số lần vượt ngưỡng liên tiếp, incident theo từng tài nguyên, acknowledge, resolve và maintenance mode. Có thể tạo rule `net.if_up == 0` để cảnh báo card mạng down; rule này không bật mặc định để tránh cảnh báo trên các cổng không sử dụng.
 - **Thông báo:** Dashboard/âm thanh, Telegram, webhook tương thích Discord/Slack và SMTP.
@@ -17,9 +17,9 @@ NOC Monitor là phần mềm giám sát tập trung gọn nhẹ theo mô hình Z
 
 ## Yêu cầu
 
-- Windows Server hoặc Windows 11 64-bit cho NOC Server.
-- Python 3.13.x 64-bit.
-- Git for Windows để clone mã nguồn.
+- Windows Server/Windows 11 64-bit hoặc Ubuntu 22.04+ cho NOC Server.
+- Python 3.13.x 64-bit trên Windows; Python 3.10+ trên Ubuntu/Linux.
+- Git để clone mã nguồn.
 - Kết nối Internet trong lúc cài Python packages; khi chạy dashboard, frontend không cần truy cập CDN.
 
 ## Cài đặt NOC Server
@@ -29,7 +29,7 @@ NOC Monitor là phần mềm giám sát tập trung gọn nhẹ theo mô hình Z
 Sau khi clone repository và mở PowerShell tại thư mục `noc-monitor`, chạy:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\setup.ps1
+powershell.exe -ExecutionPolicy Bypass -File .\WindowSetup\Server\setup.ps1
 ```
 
 Script kiểm tra Python 3.13, tạo virtual environment `.venv`, cài các package, hỏi tạo Global Admin nếu chưa có, đăng ký task `NOC Monitor` cho tài khoản Windows hiện tại và khởi động server ẩn trên cổng `6969`. Mặc định server chỉ nhận kết nối trên máy cục bộ. Task tự chạy khi tài khoản đăng nhập và thử khởi động lại nếu server bị lỗi. Setup chỉ báo thành công sau khi `/api/health` trả HTTP 200.
@@ -58,9 +58,30 @@ Stop-ScheduledTask -TaskName "NOC Monitor"
 
 Output và lỗi server được ghi vào `data/noc-server.out.log` và `data/noc-server.err.log`. Task chỉ chạy sau khi tài khoản Windows đăng nhập; để dừng hẳn tự khởi động, xóa task bằng `Unregister-ScheduledTask -TaskName "NOC Monitor"`.
 
+### Cài NOC Server trên Ubuntu/Linux
+
+Ubuntu 22.04 trở lên được hỗ trợ. Từ thư mục source đã clone, chạy:
+
+```bash
+sudo bash ./LinuxSetup/Server/install_linux.sh
+```
+
+Script cài NOC Server vào `/opt/noc-monitor`, tạo virtualenv, hỏi tạo Global Admin, đăng ký systemd service `noc-monitor` và giữ dashboard trên cổng `6969`. Mặc định server chỉ bind vào localhost. Nếu cần cho agent hoặc operator trong LAN truy cập:
+
+```bash
+sudo bash ./LinuxSetup/Server/install_linux.sh --lan-access
+```
+
+Tùy chọn `--lan-access` bind server vào `0.0.0.0`; hãy giới hạn TCP 6969 bằng firewall của máy Linux. Xem log bằng:
+
+```bash
+sudo systemctl status noc-monitor
+sudo journalctl -u noc-monitor -f
+```
+
 ### Cài thủ công
 
-Nếu muốn tự chạy từng bước:
+Nếu muốn tự chạy từng bước trên Windows:
 
 ```powershell
 py -3.13 -m venv .venv
@@ -78,12 +99,23 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
+Trên Ubuntu/Linux, dùng Python 3.10 trở lên:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m noc.auth_cli bootstrap
+python run_server.py
+```
+
 ## Truy cập NOC từ LAN
 
 Để cho operator hoặc agent trong LAN kết nối, chạy PowerShell bằng quyền Administrator và cài với tùy chọn LAN:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\setup.ps1 -LanAccess
+powershell.exe -ExecutionPolicy Bypass -File .\WindowSetup\Server\setup.ps1 -LanAccess
 ```
 
 Tùy chọn này bind server vào các interface mạng. Chỉ cho phép subnet tin cậy qua Windows Firewall:
@@ -100,7 +132,7 @@ Các biến môi trường chính:
 
 | Biến | Mặc định | Mục đích |
 | --- | --- | --- |
-| `NOC_HOST` | `127.0.0.1` | Địa chỉ bind; `setup.ps1 -LanAccess` dùng `0.0.0.0` |
+| `NOC_HOST` | `127.0.0.1` | Địa chỉ bind; bộ cài Windows `-LanAccess` hoặc Linux `--lan-access` dùng `0.0.0.0` |
 | `NOC_PORT` | `6969` | Cổng dashboard/API |
 | `NOC_SESSION_TTL_SEC` | `28800` | Thời hạn session (900–86400 giây) |
 | `NOC_COOKIE_SECURE` | `0` | Đặt `1` khi dashboard được phục vụ qua HTTPS |
@@ -113,7 +145,7 @@ Các biến môi trường chính:
 
 ## Database và tự động khởi tạo
 
-NOC Monitor V1.0.1 dùng **SQLite** qua `aiosqlite`, không dùng Microsoft SQL Server hay MySQL. Database mặc định là `data/noc.db`. Khi server khởi động, ứng dụng tự tạo thư mục, file database, bảng, host local và các rule mặc định nếu chưa có; không cần tạo database, user hay password riêng.
+NOC Monitor V1.0.2 dùng **SQLite** qua `aiosqlite`, không dùng Microsoft SQL Server hay MySQL. Database mặc định là `data/noc.db`. Khi server khởi động, ứng dụng tự tạo thư mục, file database, bảng, host local và các rule mặc định nếu chưa có; không cần tạo database, user hay password riêng.
 
 Để lưu database ở nơi khác, đặt `NOC_DATA_DIR` trước khi chạy server:
 

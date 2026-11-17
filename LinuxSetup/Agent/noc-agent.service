@@ -7,6 +7,7 @@ Wants=network-online.target
 Type=simple
 User=nocagent
 Group=nocagent
+WorkingDirectory=/opt/noc-agent
 EnvironmentFile=/etc/noc-agent.env
 ExecStart=/opt/noc-agent/.venv/bin/python /opt/noc-agent/run_agent.py --interval 15
 Restart=always

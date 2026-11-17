@@ -1,0 +1,22 @@
+[Unit]
+Description=NOC Monitor Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nocmonitor
+Group=nocmonitor
+WorkingDirectory=/opt/noc-monitor
+EnvironmentFile=-/etc/noc-monitor.env
+ExecStart=/opt/noc-monitor/.venv/bin/python /opt/noc-monitor/run_server.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/noc-monitor/data
+
+[Install]
+WantedBy=multi-user.target

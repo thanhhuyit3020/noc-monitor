@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 DATA_DIR = Path(os.getenv("NOC_DATA_DIR", ROOT / "data"))
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"

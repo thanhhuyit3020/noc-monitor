@@ -2,7 +2,7 @@ param([switch]$LanAccess)
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\.." )).Path
 $taskName = "NOC Monitor"
 $python = Join-Path $repoRoot ".venv\Scripts\python.exe"
 $ownedPids = @()
@@ -25,7 +25,7 @@ for ($attempt = 0; $attempt -lt 15 -and (Get-NetTCPConnection -LocalPort 6969 -S
 if (Get-NetTCPConnection -LocalPort 6969 -State Listen -ErrorAction SilentlyContinue) {
     throw "TCP port 6969 did not become available. Stop the old server and retry."
 }
-$startScript = Join-Path $repoRoot "start_server.ps1"
+$startScript = Join-Path $PSScriptRoot "start_server.ps1"
 $account = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $lanArgument = if ($LanAccess) { " -LanAccess" } else { "" }
 $arguments = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$startScript`"$lanArgument"

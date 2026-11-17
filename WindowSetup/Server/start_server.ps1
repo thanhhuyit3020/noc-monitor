@@ -2,7 +2,7 @@ param([switch]$LanAccess)
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\.." )).Path
 Set-Location $repoRoot
 
 $python = Join-Path $repoRoot ".venv\Scripts\python.exe"

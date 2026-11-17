@@ -2,7 +2,7 @@ param([switch]$LanAccess)
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\.." )).Path
 Set-Location $repoRoot
 
 if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
@@ -34,6 +34,6 @@ if ($LASTEXITCODE -ne 0) { throw "Could not install requirements.txt." }
 & $python -m noc.auth_cli bootstrap
 if ($LASTEXITCODE -ne 0) { throw "Could not configure the Global Admin account." }
 
-$installScript = Join-Path $repoRoot "install_autostart.ps1"
+$installScript = Join-Path $PSScriptRoot "install_autostart.ps1"
 if ($LanAccess) { & $installScript -LanAccess }
 else { & $installScript }
