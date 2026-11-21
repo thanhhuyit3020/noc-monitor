@@ -1,45 +1,73 @@
 # NOC Monitor Agent
 
-This is the optional remote-host package. It is separate from the NOC Server installer and can be installed on Windows or Linux. The agent uses Push: it makes outbound HTTPS/HTTP requests to the NOC server and does not open a listening port.
+Agent gửi CPU, RAM, disk, network và thông tin hệ điều hành về NOC Server bằng kết nối Push. Agent không mở cổng inbound.
 
-Download `noc-monitor-agent-<version>.zip` from the [GitHub Releases](https://github.com/thanhhuyit3020/noc-monitor/releases) page. On the NOC dashboard, add a **Remote agent** host in **Push** mode and copy its token. Use the NOC server's LAN address in the push URL; `127.0.0.1` only works when the agent runs on the NOC server itself.
+## 1. Chuẩn bị trên NOC Server
 
-The NOC Server must be configured to accept LAN connections before a remote agent can report. The default server setup binds to localhost. Install the NOC Server with `-LanAccess` on Windows or `--lan-access` on Ubuntu, then allow TCP 6969 from the trusted LAN in Windows Firewall or UFW. Use HTTPS when traffic crosses an untrusted network.
+1. Đăng nhập dashboard.
+2. Chọn Add host hoặc Configuration.
+3. Chọn Remote agent và chế độ Push.
+4. Lưu host và sao chép Agent token.
+5. Bật LAN access trên NOC Server.
 
-## Ubuntu
+Push URL:
 
-Ubuntu 22.04 or newer provides Python 3.10+. From a source checkout, run:
+~~~text
+http://IP-NOC-SERVER:6969/api/agent/push
+~~~
 
-```bash
+Dùng IP LAN của NOC Server. 127.0.0.1 chỉ đúng khi Agent chạy cùng máy.
+
+## 2. Ubuntu/Linux
+
+### Từ source
+
+~~~bash
+git clone https://github.com/thanhhuyit3020/noc-monitor.git
+cd noc-monitor
 sudo bash ./LinuxSetup/Agent/install_linux.sh
-```
+~~~
 
-From the extracted standalone agent ZIP, run `sudo bash ./install_linux.sh` because the package is flattened for distribution. The installer asks for the NOC push URL and host token, installs the agent into `/opt/noc-agent`, sends one test snapshot, and enables the `noc-agent` systemd service. For unattended installation from either layout:
+### Từ ZIP Agent
 
-```bash
+Tải ZIP từ GitHub Releases, giải nén rồi chạy:
+
+~~~bash
 sudo bash ./install_linux.sh \
-  --push-url https://noc.example.com/api/agent/push \
-  --token PASTE_HOST_TOKEN_HERE \
+  --push-url http://IP-NOC-SERVER:6969/api/agent/push \
+  --token YOUR_AGENT_TOKEN \
   --interval 15
-```
+~~~
 
-The installer writes the protected token file `/etc/noc-agent.env` and installs the included systemd unit:
+Agent được cài vào /opt/noc-agent.
 
-```bash
-sudo systemctl status noc-agent
+Kiểm tra:
+
+~~~bash
+sudo systemctl status noc-agent --no-pager
 sudo journalctl -u noc-agent -f
-```
+~~~
 
-## Windows
+## 3. Windows
 
-Install Python 3.10+ for all users. From a source checkout, open PowerShell as Administrator at the repository root and run:
+1. Cài Python 3.10+ cho all users.
+2. Giải nén ZIP vào ví dụ C:\NOC-Agent.
+3. Mở PowerShell Administrator.
+4. Chạy:
 
-```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\WindowSetup\Agent\install_windows.ps1
-```
+~~~powershell
+cd C:\NOC-Agent
+powershell.exe -ExecutionPolicy Bypass -File .\install_windows.ps1
+~~~
 
-From the extracted standalone agent ZIP, run `powershell.exe -ExecutionPolicy Bypass -File .\install_windows.ps1` in the extracted folder.
+Nhập Push URL và token. Agent được cài vào C:\ProgramData\NOC-Agent và chạy bằng Scheduled Task NOC Monitor Agent.
 
-The installer prompts for the NOC push URL and host token, creates an isolated virtual environment, sends a test sample, and registers a startup task named **NOC Monitor Agent**. Its token file is readable only by SYSTEM and local Administrators. Check the host status on the NOC dashboard and Task Scheduler if it does not report.
+Kiểm tra:
 
-Push mode needs outbound access from the monitored host to the NOC server on TCP 6969 (or the configured HTTPS port). Do not open inbound TCP 9108 on the agent host; that port is only used for the optional Pull mode.
+~~~powershell
+Get-ScheduledTask -TaskName "NOC Monitor Agent"
+Start-ScheduledTask -TaskName "NOC Monitor Agent"
+Test-NetConnection IP-NOC-SERVER -Port 6969
+~~~
+
+Không mở inbound port trên máy Agent. Chỉ cần cho phép outbound tới NOC Server.
